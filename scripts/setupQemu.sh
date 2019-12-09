@@ -15,7 +15,7 @@ if [ ! -f artifacts/linux/data.raw ]; then
 fi
 
 # mount images
-mkdir artifacts/rootfs
+mkdir -p artifacts/rootfs
 kldload ext2fs 2>/dev/null
 MD=`mdconfig -a artifacts/linux/xenial-server-cloudimg-amd64-disk1.raw`
 echo MD=$MD
@@ -32,14 +32,17 @@ chmod 777 artifacts/linux
 sed -I .old 's/root:\*:/root::/' artifacts/rootfs/etc/shadow
 if [ ! -f artifacts/sshKeys ]; then
   ssh-keygen -N '' -f artifacts/sshKeys
+  chmod go+r artifacts/sshKeys*
 fi
 mkdir -p artifacts/rootfs/root/.ssh
 chmod 755 artifacts/rootfs/root/.ssh
 cp artifacts/sshKeys.pub artifacts/rootfs/root/.ssh/authorized_keys
 
+echo export DOTNET_CLI_TELEMETRY_OPTOUT=1 >> artifacts/rootfs/root/.bashrc
+echo export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1 >>  artifacts/rootfs/root/.bashrc
+
 #disable cloud init
-#rm -rf artifacts/rootfs/etc/systemd/system/cloud*
-touch  /etc/cloud/cloud-init.disabled
+#touch  artifacts/rootfs/etc/cloud/cloud-init.disabled
 
 sync
 umount artifacts/rootfs
