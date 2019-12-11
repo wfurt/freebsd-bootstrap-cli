@@ -1,6 +1,6 @@
 #!/bin/sh
 
-./config
+. ./config
 
 mkdir -p ${ARTIFACTS_DIR}/download
 

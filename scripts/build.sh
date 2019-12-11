@@ -9,4 +9,5 @@
 
 rsyncToLinux
 runCmd "(cd /mnt/sources/coreclr; bash -x ./build.sh -skiptests -skipmanagedtools -skipnative  -skipcrossgen -release -osgroup FreeBSD /p:osGroup=FreeBSD /p:PackageRid=freebsd-x64 | tee coreclr.log)"
-#runCmd "(cd /mnt/sources/corefx; ./build.sh -c Release /p:osGroup=FreeBSD /p:PackageRid=freebsd-x64)"
+runCmd "(cd /mnt/sources/corefx; ./build.sh -c Release --restore)"
+runCmd "(cd /mnt/sources/corefx; ./build.sh -c Release --build  /p:osGroup=FreeBSD /p:PackageRid=freebsd-x64)"
