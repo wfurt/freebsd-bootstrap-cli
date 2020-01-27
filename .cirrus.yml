@@ -1,0 +1,31 @@
+FreeBSD_task:
+  freebsd_instance:
+    image_family: freebsd-12-0
+
+  env:
+    HOME: /home/root
+
+  make-ssh-dir_script: |
+    mkdir -p $HOME/.ssh
+    touch ~/.ssh/known_hosts
+
+  install-packages_script: ./scripts/packages.sh
+
+  download-prerequisites-script: ./scripts/download.sh
+
+  checkout-repos:script: ./scripts/checkout.sh
+
+  print-info_script: |
+    cmake --version
+    git --version
+    qemu-system-x86_64 --version
+
+  setup-qemu_script: ./scripts/setupQemu.sh
+
+  run-qemu_script: |
+    ./scripts/runQemu.sh &
+    export QEMU_PID=$!
+
+  update-linux-dependencies_script: ./scripts/updateQemu.sh
+
+  build-product_script: ./scripts/build.sh
