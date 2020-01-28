@@ -3,29 +3,23 @@ FreeBSD_task:
     image_family: freebsd-12-0
 
   env:
-    HOME: /home/root
-
-  make-ssh-dir_script: |
-    mkdir -p $HOME/.ssh
-    touch ~/.ssh/known_hosts
+    HOME: /root
 
   install-packages_script: ./scripts/packages.sh
 
-  download-prerequisites-script: ./scripts/download.sh
+  download-prerequisites_script: ./scripts/download.sh
 
   checkout-repos:script: ./scripts/checkout.sh
 
   print-info_script: |
     cmake --version
     git --version
-    qemu-system-x86_64 --version
+    vagrant --version
+    rsync --version
+    dmesg -a
 
-  setup-qemu_script: ./scripts/setupQemu.sh
+  run-vagrant_script: ./scripts/runVagrant.sh
 
-  run-qemu_script: |
-    ./scripts/runQemu.sh &
-    export QEMU_PID=$!
-
-  update-linux-dependencies_script: ./scripts/updateQemu.sh
+  update-linux-dependencies_script: ./scripts/updateVagrant.sh
 
   build-product_script: ./scripts/build.sh
