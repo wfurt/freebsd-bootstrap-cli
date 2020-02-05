@@ -1,0 +1,73 @@
+env:
+  intermediateArtifactName: dotnet-fromlinux-$CIRRUS_BUILD_ID.tar.gz
+
+Linux_task:
+  container:
+    image: ubuntu:xenial
+
+  packages_script: |
+    apt update
+    apt install -y libunwind8 libicu55 curl git clang-3.9 cmake make libc6-dev libssl-dev \
+                   libkrb5-dev libcurl4-openssl-dev zlib1g-dev liblldb-3.9-dev gettext \
+                   libicu-dev liblttng-ust-dev libkrb5-dev git locales
+
+  checkout repos_script: ./scripts/checkout.sh
+
+  generate locale_script: locale-gen en_US.UTF-8
+
+  build coreclr (managed)_script: |
+    cd $CIRRUS_WORKING_DIR/artifacts/sources/coreclr
+    bash -x ./build.sh -skiptests -skipmanagedtools -skipnative  -skipcrossgen -release -osgroup FreeBSD \
+        /p:osGroup=FreeBSD /p:PackageRid=freebsd-x64
+
+  build corefx (managed)_script: |
+    cd $CIRRUS_WORKING_DIR/artifacts/sources/corefx
+    ./build.sh -c Release --restore
+    ./build.sh -c Release --build  /p:osGroup=FreeBSD
+
+  publish_script: |
+    tar -cvzf $intermediateArtifactName $CIRRUS_WORKING_DIR/artifacts/sources/coreclr/bin/Product $CIRRUS_WORKING_DIR/artifacts/sources/corefx/artifacts/bin
+    curl -s -X POST --data-binary @$intermediateArtifactName http://$CIRRUS_HTTP_CACHE_HOST/$intermediateArtifactName
+
+FreeBSD_task:
+  freebsd_instance:
+    image_family: freebsd-12-0
+
+  depends_on: Linux
+
+  env:
+    HOME: /root
+    GH_API_TOKEN: ENCRYPTED[18bd1bb47022f0ec649d768dd4b822a44ed5e0e378ea7f8703b2a55cd6535ab90a50e915d09fe48eae451bdb9b63aeae]
+
+  install packages_script: ./scripts/packages.sh
+
+  checkout repos_script: ./scripts/checkout.sh
+
+  print info_script: |
+    . artifacts/config
+    echo "RUNTIME_VERSION: ${RUNTIME_VERSION}"
+    echo "RUNTIME_HASH: ${RUNTIME_HASH}"
+    cmake --version
+    git --version
+    clang --version
+
+  build coreclr (native)_script:
+    artifacts/sources/coreclr/build.sh -clang6.0 -skiptests -skipmanagedtools -skipmanaged -Release -portable
+
+  build corefx (native)_script:
+    artifacts/sources/corefx/src/Native/build-native.sh -release
+
+  build core-setup (native)_script: |
+    . artifacts/config
+    artifacts/sources/core-setup/src/corehost/build.sh  --configuration Release  --arch x64 \
+      --hostver ${RUNTIME_VERSION} --apphostver ${RUNTIME_VERSION} --fxrver ${RUNTIME_VERSION} --policyver ${RUNTIME_VERSION} --commithash ${RUNTIME_HASH}
+
+  publish_script: |
+    if test "$CIRRUS_TAG" != ""; then
+      artifactName=$CIRRUS_WORKING_DIR/dotnet-${CIRRUS_TAG}-freebsd.tar.gz
+      tar -cvzf $artifactName $CIRRUS_WORKING_DIR/artifacts/sources/coreclr/bin $CIRRUS_WORKING_DIR/artifacts/sources/corefx/artifacts/bin $CIRRUS_WORKING_DIR/artifacts/sources/core-setup/artifacts/bin
+      ./scripts/upload-github-release-asset.sh github_api_token=$GH_API_TOKEN owner=$CIRRUS_REPO_OWNER repo=$CIRRUS_REPO_NAME tag=$CIRRUS_TAG filename=$artifactName
+
+      curl -vO http://$CIRRUS_HTTP_CACHE_HOST/$intermediateArtifactName
+      ./scripts/upload-github-release-asset.sh github_api_token=$GH_API_TOKEN owner=$CIRRUS_REPO_OWNER repo=$CIRRUS_REPO_NAME tag=$CIRRUS_TAG filename=$intermediateArtifactName
+    fi
