@@ -3,7 +3,7 @@
 set -e
 
 SDK_VERSION=3.0.100
-RUNTIME_VERSION='3.0.0' 
+RUNTIME_VERSION='3.0.0'
 if [ -f DEFAULTS ]; then
 . DEFAULTS
 fi
@@ -70,4 +70,3 @@ echo SDK_VERSION==${SDK_VERSION} > artifacts/config
 echo RUNTIME_VERSION=${RUNTIME_VERSION} >> artifacts/config
 echo RUNTIME_HASH=${RUNTIME_HASH} >> artifacts/config
 echo SDK_HASH=${SDK_HASH} >> artifacts/config
-

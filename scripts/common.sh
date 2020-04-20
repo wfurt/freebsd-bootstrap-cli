@@ -1,7 +1,24 @@
+#!/usr/bin/env bash
+
+function runCmdQemu()
+{
+  ssh root@127.0.0.1 -p 8022 -i artifacts/sshKeys "$@"
+}
+
+function runCmdVagrant()
+{
+  pushd ~
+  vagrant ssh "$@"
+  popd
+}
 
 function runCmd()
 {
-  ssh root@127.0.0.1 -p 8022 -i artifacts/sshKeys "$@"
+  if [[ "${VIRTUALIZATION}" == "qemu" ]]; then
+    runCmdQemu "$@"
+  else
+    runCmdVagrant "$@"
+  fi
 }
 
 function updateSshKeys()
@@ -15,7 +32,16 @@ function rsyncQemu ()
   rsync -av -e 'ssh -p 8022 root@127.0.0.1 -i artifacts/sshKeys' "$@"
 }
 
+function rsyncVagrant ()
+{
+  rsync -av -e 'vagrant ssh' "@"
+}
+
 function rsyncToLinux()
 {
-  rsyncQemu artifacts/sources/* :/mnt/sources
+  if [[ "${VIRTUALIZATION}" -eq "qemu" ]]; then
+    rsyncQemu artifacts/sources/* :/mnt/sources
+  else
+    rsyncVagrant artifacts/sources/* :/mnt/sources
+  fi
 }
