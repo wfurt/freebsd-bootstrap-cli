@@ -8,4 +8,4 @@ Linux_task:
 
   clone runtime_script: git clone https://github.com/dotnet/runtime --branch master --single-branch --depth 1
 
-  build coreclr_script: runtime/src/coreclr/build-runtime.sh release x64 -cross -os FreeBSD -ci -clang9
+  build runtime_script: runtime/build.sh release -cross -os FreeBSD -ci
