@@ -1,3 +1,6 @@
+env:
+  GH_API_TOKEN: ENCRYPTED[aa6ebf09406f049f5da6a1c0b09402715d6eb985dff2d072e8e69ce280081de755d5044d2ca0be41d3f911da66372028]
+
 Linux_task:
 
   timeout_in: 120m
@@ -13,3 +16,10 @@ Linux_task:
   build runtime_script: runtime/build.sh -c release -cross -os FreeBSD -ci
 
   buildTests  runtime_script: runtime/build.sh -c release -cross -os FreeBSD -ci -subset Libs.Tests /p:archivetests=true
+
+  publish_script: |
+    if test "$CIRRUS_TAG" != ""; then
+      for artifactName in runtime/artifacts/packages/Release/Shipping/*.*; do
+        ./scripts/upload-github-release-asset.sh github_api_token=$GH_API_TOKEN owner=$CIRRUS_REPO_OWNER repo=$CIRRUS_REPO_NAME tag=$CIRRUS_TAG filename=$artifactName
+      done
+    fi
