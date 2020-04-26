@@ -1,4 +1,9 @@
+env:
+  GH_API_TOKEN: ENCRYPTED[18bd1bb47022f0ec649d768dd4b822a44ed5e0e378ea7f8703b2a55cd6535ab90a50e915d09fe48eae451bdb9b63aeae]
+
 Linux_task:
+
+  timeout_in: 120m
 
   container:
     image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-12-20200407092345-a84b0d2
@@ -9,3 +14,11 @@ Linux_task:
   clone runtime_script: git clone https://github.com/dotnet/runtime --branch master --single-branch --depth 1
 
   build runtime_script: runtime/build.sh -c release -cross -os FreeBSD -ci
+
+
+  publish_script: |
+    if test "$CIRRUS_TAG" != ""; then
+      for artifactName in runtime/artifacts/packages/Release/Shipping/*.*; do
+        ./scripts/upload-github-release-asset.sh github_api_token=$GH_API_TOKEN owner=$CIRRUS_REPO_OWNER repo=$CIRRUS_REPO_NAME tag=$CIRRUS_TAG filename=$artifactName
+      done
+    fi
