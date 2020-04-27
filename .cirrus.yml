@@ -15,7 +15,11 @@ Linux_task:
 
   build runtime_script: runtime/build.sh -c release -cross -os FreeBSD -ci
 
-  buildTests  runtime_script: runtime/build.sh -c release -cross -os FreeBSD -ci -subset Libs.Tests /p:archivetests=true
+  buildTests  runtime_script: |
+    runtime/build.sh -c release -cross -os FreeBSD -ci -subset Libs.Tests /p:archivetests=true
+    runtime/eng/common/msbuild.sh runtime/src/libraries/sendtohelix.proj /t:CompressRuntimeDirectory /p:HelixTargetQueue=FreeBSD  /p:TargetOS=FreeBSD /p:Configuration=Release
+    find  runtime/artifacts/helix
+
 
   publish_script: |
     if test "$CIRRUS_TAG" != ""; then
