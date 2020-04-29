@@ -22,10 +22,7 @@ Linux_task:
 
 
   publish_script: |
-    if [ -z "$CIRRUS_PR" ]; then
-      if test "$CIRRUS_TAG" != ""; then
-        CIRRUS_TAG=LATEST
-      fi
+    if test "$CIRRUS_TAG" != ""; then
       for artifactName in runtime/artifacts/packages/Release/Shipping/dotnet-runtime-5*tar.gz; do
         ./scripts/upload-github-release-asset.sh github_api_token=$GH_API_TOKEN owner=$CIRRUS_REPO_OWNER repo=$CIRRUS_REPO_NAME tag=$CIRRUS_TAG filename=$artifactName
       done
