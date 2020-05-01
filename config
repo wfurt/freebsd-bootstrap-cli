@@ -1,4 +1,4 @@
 TARGET_VERSION=5.0
 ARTIFACTS_DIR="artifacts"
 SDK_BRANCH=release/5.0.1xx-preview4
-RUNETIME_BRANCH=master
+RUNTIME_BRANCH=master
