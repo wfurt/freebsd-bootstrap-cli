@@ -32,6 +32,6 @@ Installer_task:
   container:
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-12-20200407092345-a84b0d2
 
-  clone runtime_script:  scripts/checkout.sh installer
+  clone installer_script:  scripts/checkout.sh installer
 
-  build runtime_script: scripts/build-sdk.sh
+  build installer_script: scripts/build-sdk.sh
