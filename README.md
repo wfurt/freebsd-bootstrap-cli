@@ -3,7 +3,7 @@
 
 [![Build Status](https://api.cirrus-ci.com/github/wfurt/freebsd-bootstrap-cli.svg)](https://cirrus-ci.com/github/wfurt/freebsd-bootstrap-cli)
 
-This projects is aiming to automate creation of .NET cli on FreeBSD.
+This projects is aiming to automate creation of .NET cli for FreeBSD.
 This is not production ready - use https://github.com/dotnet/source-build for that.
 However to build .NET Core you have to have functional .NET Core. And you can get it right here. (if you are lucky) 
 

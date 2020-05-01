@@ -1,7 +1,7 @@
 env:
   GH_API_TOKEN: ENCRYPTED[aa6ebf09406f049f5da6a1c0b09402715d6eb985dff2d072e8e69ce280081de755d5044d2ca0be41d3f911da66372028]
 
-Linux_task:
+Runtime_task:
 
   timeout_in: 120m
 
@@ -27,3 +27,11 @@ Linux_task:
         ./scripts/upload-github-release-asset.sh github_api_token=$GH_API_TOKEN owner=$CIRRUS_REPO_OWNER repo=$CIRRUS_REPO_NAME tag=$CIRRUS_TAG filename=$artifactName
       done
     fi
+
+Installer_task:
+  container:
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-12-20200407092345-a84b0d2
+
+  clone runtime_script:  scripts/checkout.sh installer
+
+  build runtime_script: scripts/build-sdk.sh
