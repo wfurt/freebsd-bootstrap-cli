@@ -2,3 +2,4 @@ TARGET_VERSION=5.0
 ARTIFACTS_DIR="artifacts"
 SDK_BRANCH=release/5.0.1xx-preview4
 RUNTIME_BRANCH=master
+DOCKER_TAG=mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-12-20200407092345-a84b0d2
