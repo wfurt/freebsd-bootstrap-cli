@@ -11,8 +11,10 @@ Linux_task:
   env:
     ROOTFS_DIR: /crossrootfs/x64
 
-  clone runtime_script: |
-    git clone https://github.com/dotnet/runtime --branch master --single-branch --depth 1
+  clone runtime_script: git clone https://github.com/dotnet/runtime --branch master --single-branch --depth 1
+
+  fixup runtime_script: |
+    # build this without BuildAllConfigurations
     sed -i.ORI 's/!=/==/' runtime/src/libraries/pkg/Microsoft.NETCore.Platforms/Microsoft.NETCore.Platforms.proj
     sed -i.ORI 's/!=/==/' runtime/src/libraries/pkg/Microsoft.NETCore.Targets/Microsoft.NETCore.Targets.proj
 
@@ -20,16 +22,33 @@ Linux_task:
     runtime/build.sh -c Release -cross -os FreeBSD -ci /p:OfficialBuildId=$(date +%Y%m%d)-99
     mkdir -p artifacts/Release
     cp runtime/artifacts/packages/Release/Shipping/dotnet-runtime-5*tar.gz artifacts/Release
+    ls -al artifacts/Release
 
   buildTests  runtime_script: |
     runtime/build.sh -c release -cross -os FreeBSD -ci -subset Libs.Tests /p:archivetests=true
     runtime/eng/common/msbuild.sh runtime/src/libraries/sendtohelix.proj /t:CompressRuntimeDirectory /p:HelixTargetQueue=FreeBSD  /p:TargetOS=FreeBSD /p:Configuration=Release
     find  runtime/artifacts/helix
 
-  clone sdk_script: |
-    scripts/checkout.sh sdk
+  clone sdk_script: scripts/checkout.sh sdk
+
+  fixup sdk_script: |
+    sdk/build.sh --help > /dev/null
+    # we do not have 3.1 FreeBSD packages
     sed -i.ORI 's/netcoreapp3.1/netcoreapp5.0/' sdk/src/Tasks/Microsoft.NET.Build.Tasks.UnitTests/Microsoft.NET.Build.Tasks.UnitTests.csproj
     sed -i.ORI 's/netcoreapp3.1/netcoreapp5.0/' sdk/src/Tasks/Microsoft.NET.Build.Extensions.Tasks.UnitTests/Microsoft.NET.Build.Extensions.Tasks.UnitTests.csproj
+    # point at runtime we just built
+    sed -i.ORI "s#<clear />#<clear />\n    <add key=\"local\" value=\"$(pwd)/runtime/artifacts/packages/Release/Shipping\" />#" sdk/NuGet.config
+    export RUNTIME=5.0.0.-$(ls artifacts/Release/dotnet-runtime-5*.tar.gz | cut -d '-' -f4)
+    export OLDRUNTIME=$(grep version .dotnet/sdk/*/dotnet.runtimeconfig.json | cut -d'"' -f4)
+    echo Patching sdk from ${OLDRUNTIME} to ${RUNTIME}
+    # fixup dotnet to feel it needs same runtime we just built so it can find FreeBSD packages
+    ln -s .dotnet/shared/${OLDRUNTIME} .dotnet/shared/${RUNTIME}
+    sed -i.ORI s/${OLDRUNTIME}/${RUNTIME}/g .dotnet/sdk/*/*.json
+    sed -i.ORI s/${OLDRUNTIME}/${RUNTIME}/g .dotnet/sdk/*/*.props
+
+  build sdk_script: |
+    export RUNTIME=5.0.0.-$(ls artifacts/Release/dotnet-runtime-5*.tar.gz | cut -d '-' -f4)
+    sdk/build.sh -c release /p:IncludeAspNetCoreRuntime=false /p:targetOS=FreeBSD /p:NETCoreSdkRuntimeIdentifier=freebsd-x64 /p:OSName=freebsd /p:Rid=freebsd-x64 /p:MicrosoftNETCoreAppRuntimePackageVersion=${RUNTIME} -ci /p:OfficialBuildId=$(date +%Y%m%d)-99
 
   publish_script: |
     if test "$CIRRUS_TAG" != ""; then
