@@ -32,7 +32,7 @@ Linux_task:
   clone sdk_script: scripts/checkout.sh sdk
 
   fixup sdk_script: |
-    sdk/build.sh --help > /dev/null
+    sdk/build.sh  --prepareMachine
     # we do not have 3.1 FreeBSD packages
     sed -i.ORI 's/netcoreapp3.1/netcoreapp5.0/' sdk/src/Tasks/Microsoft.NET.Build.Tasks.UnitTests/Microsoft.NET.Build.Tasks.UnitTests.csproj
     sed -i.ORI 's/netcoreapp3.1/netcoreapp5.0/' sdk/src/Tasks/Microsoft.NET.Build.Extensions.Tasks.UnitTests/Microsoft.NET.Build.Extensions.Tasks.UnitTests.csproj
