@@ -38,13 +38,13 @@ Linux_task:
     sed -i.ORI 's/netcoreapp3.1/netcoreapp5.0/' sdk/src/Tasks/Microsoft.NET.Build.Extensions.Tasks.UnitTests/Microsoft.NET.Build.Extensions.Tasks.UnitTests.csproj
     # point at runtime we just built
     sed -i.ORI "s#<clear />#<clear />\n    <add key=\"local\" value=\"$(pwd)/runtime/artifacts/packages/Release/Shipping\" />#" sdk/NuGet.config
-    export RUNTIME=5.0.0.-$(ls artifacts/Release/dotnet-runtime-5*.tar.gz | cut -d '-' -f4)
-    export OLDRUNTIME=$(grep version .dotnet/sdk/*/dotnet.runtimeconfig.json | cut -d'"' -f4)
+    export RUNTIME=5.0.0-$(ls artifacts/Release/dotnet-runtime-5*.tar.gz | cut -d '-' -f4)
+    export OLDRUNTIME=$(grep version sdk/.dotnet/sdk/*/dotnet.runtimeconfig.json | cut -d'"' -f4)
     echo Patching sdk from ${OLDRUNTIME} to ${RUNTIME}
     # fixup dotnet to feel it needs same runtime we just built so it can find FreeBSD packages
-    ln -s .dotnet/shared/${OLDRUNTIME} .dotnet/shared/${RUNTIME}
-    sed -i.ORI s/${OLDRUNTIME}/${RUNTIME}/g .dotnet/sdk/*/*.json
-    sed -i.ORI s/${OLDRUNTIME}/${RUNTIME}/g .dotnet/sdk/*/*.props
+    ln -s sdk/.dotnet/shared/${OLDRUNTIME} sdk/.dotnet/shared/${RUNTIME}
+    sed -i.ORI s/${OLDRUNTIME}/${RUNTIME}/g sdk/.dotnet/sdk/*/*.json
+    sed -i.ORI s/${OLDRUNTIME}/${RUNTIME}/g sdk/.dotnet/sdk/*/*.props
 
   build sdk_script: |
     export RUNTIME=5.0.0.-$(ls artifacts/Release/dotnet-runtime-5*.tar.gz | cut -d '-' -f4)
