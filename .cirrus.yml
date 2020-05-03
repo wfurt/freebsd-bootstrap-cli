@@ -1,7 +1,7 @@
 env:
   GH_API_TOKEN: ENCRYPTED[aa6ebf09406f049f5da6a1c0b09402715d6eb985dff2d072e8e69ce280081de755d5044d2ca0be41d3f911da66372028]
 
-Runtime_task:
+Linux_task:
 
   timeout_in: 120m
 
@@ -11,15 +11,25 @@ Runtime_task:
   env:
     ROOTFS_DIR: /crossrootfs/x64
 
-  clone runtime_script: git clone https://github.com/dotnet/runtime --branch master --single-branch --depth 1
+  clone runtime_script: |
+    git clone https://github.com/dotnet/runtime --branch master --single-branch --depth 1
+    sed -i.ORI 's/!=/==/' runtime/src/libraries/pkg/Microsoft.NETCore.Platforms/Microsoft.NETCore.Platforms.proj
+    sed -i.ORI 's/!=/==/' runtime/src/libraries/pkg/Microsoft.NETCore.Targets/Microsoft.NETCore.Targets.proj
 
-  build runtime_script: runtime/build.sh -c release -cross -os FreeBSD
+  build runtime_script: |
+    runtime/build.sh -c Release -cross -os FreeBSD -ci /p:OfficialBuildId=$(date +%Y%m%d)-99
+    mkdir -p artifacts/Release
+    cp runtime/artifacts/packages/Release/Shipping/dotnet-runtime-5*tar.gz artifacts/Release
 
   buildTests  runtime_script: |
     runtime/build.sh -c release -cross -os FreeBSD -ci -subset Libs.Tests /p:archivetests=true
     runtime/eng/common/msbuild.sh runtime/src/libraries/sendtohelix.proj /t:CompressRuntimeDirectory /p:HelixTargetQueue=FreeBSD  /p:TargetOS=FreeBSD /p:Configuration=Release
     find  runtime/artifacts/helix
 
+  clone sdk_script: |
+    scripts/checkout.sh sdk
+    sed -i.ORI 's/netcoreapp3.1/netcoreapp5.0/' sdk/src/Tasks/Microsoft.NET.Build.Tasks.UnitTests/Microsoft.NET.Build.Tasks.UnitTests.csproj
+    sed -i.ORI 's/netcoreapp3.1/netcoreapp5.0/' sdk/src/Tasks/Microsoft.NET.Build.Extensions.Tasks.UnitTests/Microsoft.NET.Build.Extensions.Tasks.UnitTests.csproj
 
   publish_script: |
     if test "$CIRRUS_TAG" != ""; then
