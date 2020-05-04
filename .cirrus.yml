@@ -45,7 +45,8 @@ Linux_task:
     export OLDRUNTIME=$(grep version sdk/.dotnet/sdk/*/dotnet.runtimeconfig.json | cut -d'"' -f4)
     echo Patching sdk from ${OLDRUNTIME} to ${RUNTIME}
     # fixup dotnet to feel it needs same runtime we just built so it can find FreeBSD packages
-    ln -s sdk/.dotnet/shared/Microsoft.NETCore.App/${OLDRUNTIME} sdk/.dotnet/shared/Microsoft.NETCore.App/${RUNTIME}
+    ln -s ${OLDRUNTIME} sdk/.dotnet/shared/Microsoft.NETCore.App/${RUNTIME}
+    ls -al  sdk/.dotnet/shared/Microsoft.NETCore.App/
     sed -i.ORI s/${OLDRUNTIME}/${RUNTIME}/g sdk/.dotnet/sdk/*/*.json
     sed -i.ORI s/${OLDRUNTIME}/${RUNTIME}/g sdk/.dotnet/sdk/*/*.props
 
