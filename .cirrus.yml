@@ -36,25 +36,25 @@ Linux_task:
     sed -i.ORI s/18/16/ /etc/os-release
     sdk/build.sh  --prepareMachine
     cp  /etc/os-release.ORI  /etc/os-release
-    # we do not have 3.1 FreeBSD packages
-    sed -i.ORI 's/netcoreapp3.1/netcoreapp5.0/' sdk/src/Tasks/Microsoft.NET.Build.Tasks.UnitTests/Microsoft.NET.Build.Tasks.UnitTests.csproj
-    sed -i.ORI 's/netcoreapp3.1/netcoreapp5.0/' sdk/src/Tasks/Microsoft.NET.Build.Extensions.Tasks.UnitTests/Microsoft.NET.Build.Extensions.Tasks.UnitTests.csproj
-    # point at runtime we just built
-    sed -i.ORI "s#<clear />#<clear />\n    <add key=\"local\" value=\"$(pwd)/runtime/artifacts/packages/Release/Shipping\" />#" sdk/NuGet.config
-    cat sdk/NuGet.config
-    ls -al $(pwd)/runtime/artifacts/packages/Release/Shipping
     export RUNTIME=5.0.0-$(ls artifacts/Release/dotnet-runtime-5*.tar.gz | cut -d '-' -f4)
     export OLDRUNTIME=$(grep version sdk/.dotnet/sdk/*/dotnet.runtimeconfig.json | cut -d'"' -f4)
     echo Patching sdk from ${OLDRUNTIME} to ${RUNTIME}
     # fixup dotnet to feel it needs same runtime we just built so it can find FreeBSD packages
-    ln -s ${OLDRUNTIME} sdk/.dotnet/shared/Microsoft.NETCore.App/${RUNTIME}
-    ls -al  sdk/.dotnet/shared/Microsoft.NETCore.App/
-    sed -i.ORI s/${OLDRUNTIME}/${RUNTIME}/g sdk/.dotnet/sdk/*/*.json
-    sed -i.ORI s/${OLDRUNTIME}/${RUNTIME}/g sdk/.dotnet/sdk/*/*.props
+    rsync -a sdk/.dotnet/shared/Microsoft.NETCore.App/${OLDRUNTIME}/  sdk/.dotnet/shared/Microsoft.NETCore.App/${RUNTIME}
 
   build sdk_script: |
     export RUNTIME=5.0.0-$(ls artifacts/Release/dotnet-runtime-5*.tar.gz | cut -d '-' -f4)
-    sdk/build.sh -c release /p:IncludeAspNetCoreRuntime=false /p:targetOS=FreeBSD /p:NETCoreSdkRuntimeIdentifier=freebsd-x64 /p:OSName=freebsd /p:Rid=freebsd-x64 /p:MicrosoftNETCoreAppRuntimePackageVersion=${RUNTIME} -ci /p:OfficialBuildId=$(date +%Y%m%d)-99
+    sdk/build.sh -c release /p:IncludeAspNetCoreRuntime=false /p:targetOS=OSX /p:NETCoreSdkRuntimeIdentifier=osx-x64 /p:OSName=osx -ci /p:OfficialBuildId=$(date +%Y%m%d)-99
+    export OLDRUNTIME=$(grep version sdk/artifacts/bin/redist/Release/dotnet/sdk/*/dotnet.runtimeconfig.json | cut -d'"' -f4)
+    sed -i.ORI s/${OLDRUNTIME}/${RUNTIME}/g sdk/artifacts/bin/redist/Release/dotnet/sdk/*/*.json
+    sed -i.ORI s/${OLDRUNTIME}/${RUNTIME}/g sdk/artifacts/bin/redist/Release/dotnet/sdk/*/*.props
+    sed -i.ORI 's/osx-x64/osx-x64;freebsd-x64/' sdk/artifacts/bin/redist/Release/dotnet/sdk/*/Microsoft.NETCoreSdk.BundledVersions.props
+    sed -i.ORI 's/NETCoreSdkRuntimeIdentifier>linux/NETCoreSdkRuntimeIdentifier>freebsd/' sdk/artifacts/bin/redist/Release/dotnet/sdk/*/Microsoft.NETCoreSdk.BundledVersions.props
+    # package
+    mkdir -p sdk/artifacts/bin/redist/Release/dotnet-freebsd
+    tar xfz artifacts/Release/dotnet-runtime-5*.tar.gz -C sdk/artifacts/bin/redist/Release/dotnet-freebsd
+    rsync -a sdk/artifacts/bin/redist/Release/dotnet/sdk sdk/artifacts/bin/redist/Release/dotnet-freebsd
+    tar cfz artifacts/Release/dotnet-sdk-${RUNTIME}-tar.gz -C sdk/artifacts/bin/redist/Release/dotnet-freebsd  .
 
   publish_script: |
     if test "$CIRRUS_TAG" != ""; then
