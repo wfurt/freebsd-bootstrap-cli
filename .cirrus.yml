@@ -40,7 +40,7 @@ Linux_task:
     export OLDRUNTIME=$(grep version sdk/.dotnet/sdk/*/dotnet.runtimeconfig.json | cut -d'"' -f4)
     echo Patching sdk from ${OLDRUNTIME} to ${RUNTIME}
     # fixup dotnet to feel it needs same runtime we just built so it can find FreeBSD packages
-    rsync -a sdk/.dotnet/shared/Microsoft.NETCore.App/${OLDRUNTIME}/  sdk/.dotnet/shared/Microsoft.NETCore.App/${RUNTIME}
+    # rsync -a sdk/.dotnet/shared/Microsoft.NETCore.App/${OLDRUNTIME}/  sdk/.dotnet/shared/Microsoft.NETCore.App/${RUNTIME}
 
   build sdk_script: |
     export RUNTIME=5.0.0-$(ls artifacts/Release/dotnet-runtime-5*.tar.gz | cut -d '-' -f4)
@@ -53,7 +53,8 @@ Linux_task:
     # package
     mkdir -p sdk/artifacts/bin/redist/Release/dotnet-freebsd
     tar xfz artifacts/Release/dotnet-runtime-5*.tar.gz -C sdk/artifacts/bin/redist/Release/dotnet-freebsd
-    rsync -a sdk/artifacts/bin/redist/Release/dotnet/sdk sdk/artifacts/bin/redist/Release/dotnet-freebsd
+    #rsync -a sdk/artifacts/bin/redist/Release/dotnet/sdk sdk/artifacts/bin/redist/Release/dotnet-freebsd
+    cp -r sdk/artifacts/bin/redist/Release/dotnet/sdk sdk/artifacts/bin/redist/Release/dotnet-freebsd
     tar cfz artifacts/Release/dotnet-sdk-${RUNTIME}-tar.gz -C sdk/artifacts/bin/redist/Release/dotnet-freebsd  .
 
   publish_script: |
