@@ -13,17 +13,48 @@ Linux_task:
 
   clone runtime_script: git clone https://github.com/dotnet/runtime --branch master --single-branch --depth 1
 
-  build runtime_script: runtime/build.sh -c release -cross -os FreeBSD
+  fixup runtime_script: |
+    # build this without BuildAllConfigurations
+    sed -i.ORI 's/!=/==/' runtime/src/libraries/pkg/Microsoft.NETCore.Platforms/Microsoft.NETCore.Platforms.proj
+    sed -i.ORI 's/!=/==/' runtime/src/libraries/pkg/Microsoft.NETCore.Targets/Microsoft.NETCore.Targets.proj
+
+  build runtime_script: |
+    runtime/build.sh -c Release -cross -os FreeBSD -ci /p:OfficialBuildId=$(date +%Y%m%d)-99
+    mkdir -p artifacts/Release
+    cp runtime/artifacts/packages/Release/Shipping/dotnet-runtime-5*tar.gz artifacts/Release
 
   buildTests  runtime_script: |
     runtime/build.sh -c release -cross -os FreeBSD -ci -subset Libs.Tests /p:archivetests=true
     runtime/eng/common/msbuild.sh runtime/src/libraries/sendtohelix.proj /t:CompressRuntimeDirectory /p:HelixTargetQueue=FreeBSD  /p:TargetOS=FreeBSD /p:Configuration=Release
     find  runtime/artifacts/helix
 
+  clone sdk_script: scripts/checkout.sh sdk
+
+  fixup sdk_script: |
+    # sdk build does not work on Ubuntu 18 ;(
+    sed -i.ORI s/18/16/ /etc/os-release
+    sdk/build.sh  --prepareMachine
+    cp  /etc/os-release.ORI  /etc/os-release
+
+  build sdk_script: |
+    export RUNTIME=5.0.0-$(ls artifacts/Release/dotnet-runtime-5*.tar.gz | cut -d '-' -f4)
+    sdk/build.sh -c release /p:IncludeAspNetCoreRuntime=false /p:targetOS=OSX /p:NETCoreSdkRuntimeIdentifier=osx-x64 /p:OSName=osx -ci /p:OfficialBuildId=$(date +%Y%m%d)-99
+    export OLDRUNTIME=$(grep version sdk/artifacts/bin/redist/Release/dotnet/sdk/*/dotnet.runtimeconfig.json | cut -d'"' -f4)
+    sed -i.ORI s/${OLDRUNTIME}/${RUNTIME}/g sdk/artifacts/bin/redist/Release/dotnet/sdk/*/*.json
+    sed -i.ORI s/${OLDRUNTIME}/${RUNTIME}/g sdk/artifacts/bin/redist/Release/dotnet/sdk/*/*.props
+    sed -i.ORI 's/osx-x64/osx-x64;freebsd-x64/' sdk/artifacts/bin/redist/Release/dotnet/sdk/*/Microsoft.NETCoreSdk.BundledVersions.props
+    sed -i.ORI 's/NETCoreSdkRuntimeIdentifier>linux/NETCoreSdkRuntimeIdentifier>freebsd/' sdk/artifacts/bin/redist/Release/dotnet/sdk/*/Microsoft.NETCoreSdk.BundledVersions.props
+    # package
+    mkdir -p sdk/artifacts/bin/redist/Release/dotnet-freebsd
+    tar xfz artifacts/Release/dotnet-runtime-5*.tar.gz -C sdk/artifacts/bin/redist/Release/dotnet-freebsd
+    #rsync -a sdk/artifacts/bin/redist/Release/dotnet/sdk sdk/artifacts/bin/redist/Release/dotnet-freebsd
+    cp -r sdk/artifacts/bin/redist/Release/dotnet/sdk sdk/artifacts/bin/redist/Release/dotnet-freebsd
+    tar cfz artifacts/Release/dotnet-sdk-${RUNTIME}-tar.gz -C sdk/artifacts/bin/redist/Release/dotnet-freebsd  .
 
   publish_script: |
     if test "$CIRRUS_TAG" != ""; then
-      for artifactName in runtime/artifacts/packages/Release/Shipping/dotnet-runtime-5*tar.gz; do
+      for artifactName in artifacts/Release/* ; do
         ./scripts/upload-github-release-asset.sh github_api_token=$GH_API_TOKEN owner=$CIRRUS_REPO_OWNER repo=$CIRRUS_REPO_NAME tag=$CIRRUS_TAG filename=$artifactName
       done
     fi
+
