@@ -22,7 +22,6 @@ Linux_task:
     runtime/build.sh -c Release -cross -os FreeBSD -ci /p:OfficialBuildId=$(date +%Y%m%d)-99
     mkdir -p artifacts/Release
     cp runtime/artifacts/packages/Release/Shipping/dotnet-runtime-5*tar.gz artifacts/Release
-    ls -al artifacts/Release
 
   buildTests  runtime_script: |
     runtime/build.sh -c release -cross -os FreeBSD -ci -subset Libs.Tests /p:archivetests=true
@@ -36,11 +35,6 @@ Linux_task:
     sed -i.ORI s/18/16/ /etc/os-release
     sdk/build.sh  --prepareMachine
     cp  /etc/os-release.ORI  /etc/os-release
-    export RUNTIME=5.0.0-$(ls artifacts/Release/dotnet-runtime-5*.tar.gz | cut -d '-' -f4)
-    export OLDRUNTIME=$(grep version sdk/.dotnet/sdk/*/dotnet.runtimeconfig.json | cut -d'"' -f4)
-    echo Patching sdk from ${OLDRUNTIME} to ${RUNTIME}
-    # fixup dotnet to feel it needs same runtime we just built so it can find FreeBSD packages
-    # rsync -a sdk/.dotnet/shared/Microsoft.NETCore.App/${OLDRUNTIME}/  sdk/.dotnet/shared/Microsoft.NETCore.App/${RUNTIME}
 
   build sdk_script: |
     export RUNTIME=5.0.0-$(ls artifacts/Release/dotnet-runtime-5*.tar.gz | cut -d '-' -f4)
@@ -59,7 +53,7 @@ Linux_task:
 
   publish_script: |
     if test "$CIRRUS_TAG" != ""; then
-      for artifactName in runtime/artifacts/packages/Release/Shipping/dotnet-runtime-5*tar.gz; do
+      for artifactName in artifacts/Release/* ; do
         ./scripts/upload-github-release-asset.sh github_api_token=$GH_API_TOKEN owner=$CIRRUS_REPO_OWNER repo=$CIRRUS_REPO_NAME tag=$CIRRUS_TAG filename=$artifactName
       done
     fi
